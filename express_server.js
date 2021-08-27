@@ -13,6 +13,18 @@ app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
+app.get('/urls', (req, res) => {
+  const templateVars = { urls: urlDatabase };
+  res.render('urls_index', templateVars);
+});
+
+app.get("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const mainURL = urlDatabase[shortURL];
+  const templateVars = { shortURL, mainURL };
+  res.render("urls_show", templateVars);
+});
+
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
 });
