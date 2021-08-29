@@ -8,7 +8,7 @@ const generateRandomString = () => {
   const randString = Math.random().toString(16).slice(9);
   return randString;
 }
-//generateRandomString();
+
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -22,17 +22,25 @@ app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
+//redirects users to edit page and allows them to change the shortURL to a new value
+app.post('/urls/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  urlDatabase[shortURL] = req.body.mainURL
+  res.redirect(`${shortURL}`)
+})
+
 app.get('/urls', (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render('urls_index', templateVars);
 
 });
 
+//Auto updates urlDatabase with generated short URLs
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.mainURL
   res.redirect(`urls/${shortURL}`)
-  console.log()
+
 });
 
 //Add a GET Route to Show the Form
@@ -65,6 +73,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   delete urlDatabase[req.params.shortURL]
   res.redirect('/urls')
 });
+
 
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
