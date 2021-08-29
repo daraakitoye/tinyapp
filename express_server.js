@@ -29,9 +29,12 @@ app.get('/urls', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
-  console.log(req.body);
-  res.send('Ok');
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = req.body.mainURL
+  res.redirect(`urls/${shortURL}`)
+  console.log()
 });
+
 //Add a GET Route to Show the Form
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
@@ -55,6 +58,12 @@ app.get('/u/:shortURL', (req, res) => {
     return;
   }
   res.redirect(mainURL);
+});
+
+//Deletes unwanted urls
+app.post('/urls/:shortURL/delete', (req, res) => {
+  delete urlDatabase[req.params.shortURL]
+  res.redirect('/urls')
 });
 
 app.get('/urls.json', (req, res) => {
