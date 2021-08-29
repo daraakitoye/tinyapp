@@ -5,11 +5,8 @@ const bodyParser = require('body-parser');
 
 
 const generateRandomString = () => {
-  const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-  const randChar = alphabet[Math.floor(Math.random() * alphabet.length)];
-  const randString = Math.random().toString(16).slice(10);
-  const randShortUrl = randChar + randString;
-  return randShortUrl;
+  const randString = Math.random().toString(16).slice(9);
+  return randString;
 }
 //generateRandomString();
 
@@ -47,13 +44,23 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//Redirect Short URLs
+app.get('/u/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const mainURL = urlDatabase[shortURL];
+
+  if (res.statusCode !== 200) {
+    const msg = `Status Code ${response.statusCode} when fetching IP. This url does not exist.`;
+    res.send(msg);
+    return;
+  }
+  res.redirect(mainURL);
+});
+
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get('/hello', (req, res) => {
-  res.send('<html><body>Hello <b>World</b></body></html>\n')
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`)
