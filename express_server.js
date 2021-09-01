@@ -34,7 +34,8 @@ app.get('/urls', (req, res) => {
 
 //Add a GET Route to Show the Form
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = { username: req.cookies["username"] }
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
