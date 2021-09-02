@@ -11,11 +11,35 @@ const generateRandomString = () => {
   return randString;
 }
 
-let user = {}
+
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+}
+
+const checkIfEmailExists = (email) => {
+  for (user in users) {
+    const savedEmail = users[user]['email'];
+    if (savedEmail === email) {
+      return true;
+    }
+  } return false;
+};
+
+
 //------------------------------------------------------------------------>
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -26,22 +50,27 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
+  const urls = urlDatabase;
+  const user = users[req.cookies['user_id']];
 
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  const templateVars = { urls, user };
   res.render('urls_index', templateVars);
 
 });
 
 //Add a GET Route to Show the Form
 app.get("/urls/new", (req, res) => {
-  const templateVars = { username: req.cookies["username"] }
+  const user = users[req.cookies['user_id']];
+  const templateVars = { user }
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const mainURL = urlDatabase[shortURL];
-  const templateVars = { shortURL, mainURL, username: req.cookies["username"] };
+  const user = users[req.cookies['user_id']];
+
+  const templateVars = { shortURL, mainURL, user };
   res.render("urls_show", templateVars);
 });
 
@@ -50,12 +79,16 @@ app.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const mainURL = urlDatabase[shortURL];
 
-  if (res.statusCode !== 200) {
-    const msg = `Status Code ${response.statusCode} when fetching IP. This url does not exist.`;
-    res.send(msg);
-    return;
-  }
+
   res.redirect(mainURL);
+});
+
+app.get('/register', (req, res) => {
+  const user = users[req.cookies['user_id']];
+  const templateVars = { user };
+
+
+  res.render('register', templateVars);
 });
 //-------------------------------------------------------------------------------------------------------------------------->
 
@@ -67,7 +100,36 @@ app.post('/urls', (req, res) => {
 
 });
 
+app.post('/register', (req, res) => {
+  const user_id = 'user-' + generateRandomString();
+  const emailCheck = checkIfEmailExists(req.body.email);
+
+  const user = {
+    id: user_id,
+    email: req.body.email,
+    password: req.body.password
+  }
+
+  if (emailCheck) {
+    res.status(400).send('Sorry, the account associated with this email already exists.');
+  } else {
+    users[user_id] = user;
+  }
+
+  //tests
+  console.log(req.body.email)
+  console.log(emailCheck)
+  console.log(users);
+
+  res.cookie('user_id', user['id'])
+  res.redirect('/urls')
+});
+
+
+
+
 app.post('/login', (req, res) => {
+  const user_id = generateRandomString();
   res.cookie('username', req.body.username);
   res.redirect('/urls')
 });
@@ -76,6 +138,8 @@ app.post('/logout', (req, res) => {
   res.clearCookie('username');
   res.redirect('/urls')
 });
+
+
 //redirects users to edit page and allows them to change the shortURL to a new value
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
