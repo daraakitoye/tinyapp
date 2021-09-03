@@ -43,6 +43,7 @@ const checkIfEmailExists = (email) => {
 //------------------------------------------------------------------------>
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+
 app.set('view engine', 'ejs');
 
 app.get('/', (req, res) => {
@@ -90,6 +91,12 @@ app.get('/register', (req, res) => {
 
   res.render('register', templateVars);
 });
+app.get('/login', (req, res) => {
+  const user = users[req.cookies['user_id']];
+  const templateVars = { user };
+
+  res.render('urls_login', templateVars)
+});
 //-------------------------------------------------------------------------------------------------------------------------->
 
 //Auto updates urlDatabase with generated short URLs
@@ -121,7 +128,7 @@ app.post('/register', (req, res) => {
   console.log(emailCheck)
   console.log(users);
 
-  res.cookie('user_id', user['id'])
+  res.cookie('user_id', user_id)
   res.redirect('/urls')
 });
 
@@ -129,7 +136,7 @@ app.post('/register', (req, res) => {
 
 
 app.post('/login', (req, res) => {
-  const user_id = generateRandomString();
+
   res.cookie('username', req.body.username);
   res.redirect('/urls')
 });
