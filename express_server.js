@@ -14,9 +14,11 @@ const generateRandomString = () => {
 
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { mainURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { mainURL: "https://www.google.ca", userID: "aJ48lW" }
 };
+
+
 
 const users = {
   "userRandomID": {
@@ -56,13 +58,21 @@ app.get('/urls', (req, res) => {
 app.get("/urls/new", (req, res) => {
   const user = users[req.cookies['user_id']];
   const templateVars = { user }
-  res.render("urls_new", templateVars);
+
+  if (req.cookies['user_id'] === undefined) {
+    res.redirect('/login')
+  } else {
+    res.render("urls_new", templateVars);
+  }
+
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const mainURL = urlDatabase[shortURL];
+  const mainURL = urlDatabase[shortURL]['mainURL'];
+
   const user = users[req.cookies['user_id']];
+
 
   const templateVars = { shortURL, mainURL, user };
   res.render("urls_show", templateVars);
@@ -71,7 +81,7 @@ app.get("/urls/:shortURL", (req, res) => {
 //Redirect Short URLs
 app.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const mainURL = urlDatabase[shortURL];
+  const mainURL = urlDatabase[shortURL]['mainURL'];
 
 
   res.redirect(mainURL);
@@ -95,7 +105,11 @@ app.get('/login', (req, res) => {
 //Auto updates urlDatabase with generated short URLs
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.mainURL
+  urlDatabase[shortURL] = {
+    mainURL: req.body.mainURL,
+    userID: req.cookies['user_id']
+  }
+
   res.redirect(`urls/${shortURL}`)
 
 });
@@ -150,8 +164,13 @@ app.post('/logout', (req, res) => {
 //redirects users to edit page and allows them to change the shortURL to a new value
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = req.body.mainURL
+  urlDatabase[shortURL] = {
+    mainURL: req.body.mainURL
+  }
+
   res.redirect(`${shortURL}`)
+
+
 })
 
 
