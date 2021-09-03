@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const { checkIfEmailExists, authenticateUser } = require('./helpers')
 
 
 
@@ -30,14 +31,6 @@ const users = {
   }
 }
 
-const checkIfEmailExists = (email) => {
-  for (user in users) {
-    const savedEmail = users[user]['email'];
-    if (savedEmail === email) {
-      return true;
-    }
-  } return false;
-};
 
 
 //------------------------------------------------------------------------>
@@ -109,7 +102,7 @@ app.post('/urls', (req, res) => {
 
 app.post('/register', (req, res) => {
   const user_id = 'user-' + generateRandomString();
-  const emailCheck = checkIfEmailExists(req.body.email);
+  const emailCheck = checkIfEmailExists(req.body.email, users);
 
   const user = {
     id: user_id,
@@ -123,11 +116,6 @@ app.post('/register', (req, res) => {
     users[user_id] = user;
   }
 
-  //tests
-  console.log(req.body.email)
-  console.log(emailCheck)
-  console.log(users);
-
   res.cookie('user_id', user_id)
   res.redirect('/urls')
 });
@@ -136,13 +124,25 @@ app.post('/register', (req, res) => {
 
 
 app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = authenticateUser(email, password, users)
 
-  res.cookie('username', req.body.username);
-  res.redirect('/urls')
+
+
+  if (user) {
+    res.cookie('user_id', user.id);
+    res.redirect('/urls')
+    return;
+  }
+  else {
+    res.status(403).send('Invalid email and/or password. Please sumbit a valid email/password or create a new account.')
+    return;
+  }
+
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls')
 });
 
