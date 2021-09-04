@@ -12,9 +12,6 @@ app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   secret: 'ICE-KING'
-
-  // Cookie Options
-  // maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 app.set('view engine', 'ejs');
 
@@ -49,15 +46,6 @@ const users = {
 }
 
 
-// const urlsForUser = (id, urlDatabase) => {
-//   let urlsObj = {};
-//   for (urls in urlDatabase) {
-//     if (id === urlDatabase[urls].userID) {
-//       urlsObj[urls] = urlDatabase[urls];
-//     }
-//   }
-//   return urlsObj;
-// };
 //----------------------------------------------------------------------GETting Routes------------------------------------------------------------------------------->
 
 app.get('/', (req, res) => {
@@ -84,7 +72,6 @@ app.get("/urls/new", (req, res) => {
   } else {
     res.render("urls_new", templateVars);
   }
-
 });
 
 //shows page for shortURLs and edit form
@@ -121,13 +108,12 @@ app.get('/register', (req, res) => {
 app.get('/login', (req, res) => {
   const user = users[req.session.user_id];
   const templateVars = { user };
-  //console.log(user)
+
   if (user) {
     res.redirect("/urls");
   } else {
     res.render("urls_login", templateVars);
   }
-
 });
 //---------------------------------------------------------------------POSTing Requests---------------------------------------------------------------------------->
 
@@ -138,7 +124,6 @@ app.post('/urls', (req, res) => {
     mainURL: req.body.mainURL,
     userID: req.session.user_id
   }
-
   res.redirect(`urls/${shortURL}`)
 
 });
@@ -160,7 +145,6 @@ app.post('/register', (req, res) => {
   } else {
     users[user_id] = user;
   }
-  //console.log(emailCheck)
 
   req.session.user_id = user.id;
   res.redirect('/urls')
@@ -170,11 +154,11 @@ app.post('/register', (req, res) => {
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = getUserByEmail(email, users)
-  console.log(user);
-  console.log(req.body.password)
-  console.log(users)
-  console.log(urlDatabase)
-  //checks if user is found within user database
+  // console.log(user);
+  // console.log(req.body.password)
+  // console.log(users)
+  // console.log(urlDatabase)
+  // //checks if user is found within user database
 
   if (user && bcrypt.compareSync(password, user.password)) {
     req.session.user_id = user.id;
@@ -201,9 +185,7 @@ app.post('/urls/:shortURL', (req, res) => {
   const ID = req.session.user_id;
 
   if (ID === urlDatabase[shortURL].userID) {
-    //console.log('it worked!');
     urlDatabase[shortURL].mainURL = req.body.newURL
-    // console.log(urlDatabase)
     res.redirect(`${shortURL}`)
   } else {
     res.status(400).send("Unauthorized user");
@@ -227,13 +209,6 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 });
 
 
-app.get('/urls.json', (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get('/users.json', (req, res) => {
-  res.json(users);
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`)
