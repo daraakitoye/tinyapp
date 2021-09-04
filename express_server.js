@@ -4,10 +4,18 @@ const PORT = 8080; // default port 8080
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const { checkIfEmailExists, authenticateUser, getUserByEmail } = require('./helpers')
+const cookieSession = require('cookie-session');
+const { getUserByEmail, urlsForUser } = require('./helpers')
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  secret: 'ICE-KING'
+
+  // Cookie Options
+  // maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
 app.set('view engine', 'ejs');
 
 const generateRandomString = () => {
@@ -41,15 +49,15 @@ const users = {
 }
 
 
-const urlsForUser = (id, urlDatabase) => {
-  let urlsObj = {};
-  for (urls in urlDatabase) {
-    if (id === urlDatabase[urls].userID) {
-      urlsObj[urls] = urlDatabase[urls];
-    }
-  }
-  return urlsObj;
-};
+// const urlsForUser = (id, urlDatabase) => {
+//   let urlsObj = {};
+//   for (urls in urlDatabase) {
+//     if (id === urlDatabase[urls].userID) {
+//       urlsObj[urls] = urlDatabase[urls];
+//     }
+//   }
+//   return urlsObj;
+// };
 //----------------------------------------------------------------------GETting Routes------------------------------------------------------------------------------->
 
 app.get('/', (req, res) => {
@@ -58,8 +66,8 @@ app.get('/', (req, res) => {
 
 //for homepage
 app.get('/urls', (req, res) => {
-  const urls = urlsForUser(req.cookies['user_id'], urlDatabase);
-  const user = users[req.cookies['user_id']];
+  const urls = urlsForUser(req.session.user_id, urlDatabase);
+  const user = users[req.session.user_id];
 
   const templateVars = { urls, user };
   res.render('urls_index', templateVars);
@@ -68,10 +76,10 @@ app.get('/urls', (req, res) => {
 
 //Add a GET Route to Show the Form
 app.get("/urls/new", (req, res) => {
-  const user = users[req.cookies['user_id']];
+  const user = users[req.session.user_id];
   const templateVars = { user }
 
-  if (req.cookies['user_id'] === undefined) {
+  if (req.session.user_id === undefined) {
     res.redirect('/login')
   } else {
     res.render("urls_new", templateVars);
@@ -82,8 +90,8 @@ app.get("/urls/new", (req, res) => {
 //shows page for shortURLs and edit form
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const user = users[req.cookies['user_id']];
-  const urls = urlsForUser(req.cookies['user_id'], urlDatabase);
+  const user = users[req.session.user_id];
+  const urls = urlsForUser(req.session.user_id, urlDatabase);
 
   const templateVars = { shortURL, user, urls };
   res.render("urls_show", templateVars);
@@ -103,7 +111,7 @@ app.get('/u/:shortURL', (req, res) => {
 
 //for displaying registration form
 app.get('/register', (req, res) => {
-  const user = users[req.cookies['user_id']];
+  const user = users[req.session.user_id];
   const templateVars = { user };
 
   res.render('register', templateVars);
@@ -111,10 +119,15 @@ app.get('/register', (req, res) => {
 
 //for displaying login form
 app.get('/login', (req, res) => {
-  const user = users[req.cookies['user_id']];
+  const user = users[req.session.user_id];
   const templateVars = { user };
+  //console.log(user)
+  if (user) {
+    res.redirect("/urls");
+  } else {
+    res.render("urls_login", templateVars);
+  }
 
-  res.render('urls_login', templateVars)
 });
 //---------------------------------------------------------------------POSTing Requests---------------------------------------------------------------------------->
 
@@ -123,7 +136,7 @@ app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {
     mainURL: req.body.mainURL,
-    userID: req.cookies['user_id']
+    userID: req.session.user_id
   }
 
   res.redirect(`urls/${shortURL}`)
@@ -147,23 +160,24 @@ app.post('/register', (req, res) => {
   } else {
     users[user_id] = user;
   }
-  console.log(emailCheck)
+  //console.log(emailCheck)
 
-  res.cookie('user_id', user_id)
+  req.session.user_id = user.id;
   res.redirect('/urls')
 });
 
 //allows accsess for returning users
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  //const hashedPassword = bcrypt.hashSync(req.body.password, 10);
   const user = getUserByEmail(email, users)
-  //console.log(user);
+  console.log(user);
+  console.log(req.body.password)
   console.log(users)
+  console.log(urlDatabase)
   //checks if user is found within user database
 
-  if (bcrypt.compareSync(password, user.password) && user) {
-    res.cookie('user_id', user.id);
+  if (user && bcrypt.compareSync(password, user.password)) {
+    req.session.user_id = user.id;
     res.redirect('/urls')
   } else {
     res.status(403).send('Invalid email and/or password. Please sumbit a valid email/password or create a new account.')
@@ -175,7 +189,7 @@ app.post('/login', (req, res) => {
 
 //clears cookies from previous users
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/urls')
 });
 
@@ -184,7 +198,7 @@ app.post('/logout', (req, res) => {
 //...as long as they are authorized
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const ID = req.cookies['user_id'];
+  const ID = req.session.user_id;
 
   if (ID === urlDatabase[shortURL].userID) {
     //console.log('it worked!');
@@ -200,7 +214,7 @@ app.post('/urls/:shortURL', (req, res) => {
 
 //Deletes unwanted urls for authorized users
 app.post('/urls/:shortURL/delete', (req, res) => {
-  const ID = req.cookies['user_id'];
+  const ID = req.session.user_id;
   const shortURL = req.params.shortURL;
 
   if (ID === urlDatabase[shortURL].userID) {
@@ -217,6 +231,9 @@ app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
 });
 
+app.get('/users.json', (req, res) => {
+  res.json(users);
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`)
