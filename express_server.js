@@ -8,8 +8,12 @@ const { checkIfEmailExists, authenticateUser } = require('./helpers')
 
 
 const generateRandomString = () => {
-  const randString = Math.random().toString(16).slice(9);
-  return randString;
+  let result = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
 }
 
 
@@ -34,7 +38,15 @@ const users = {
 }
 
 
-
+const urlsForUser = (id, urlDatabase) => {
+  let urlsObj = {};
+  for (urls in urlDatabase) {
+    if (id === urlDatabase[urls].userID) {
+      urlsObj[urls] = urlDatabase[urls];
+    }
+  }
+  return urlsObj;
+};
 //------------------------------------------------------------------------>
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -46,7 +58,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const urls = urlDatabase;
+  const urls = urlsForUser(req.cookies['user_id'], urlDatabase);
   const user = users[req.cookies['user_id']];
 
   const templateVars = { urls, user };
@@ -69,22 +81,24 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const mainURL = urlDatabase[shortURL]['mainURL'];
-
+  // const mainURL = urlDatabase[shortURL]['mainURL'];
   const user = users[req.cookies['user_id']];
+  const urls = urlsForUser(req.cookies['user_id'], urlDatabase);
 
-
-  const templateVars = { shortURL, mainURL, user };
+  const templateVars = { shortURL, user, urls };
   res.render("urls_show", templateVars);
 });
 
 //Redirect Short URLs
 app.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  const mainURL = urlDatabase[shortURL]['mainURL'];
+  const mainURL = urlDatabase[shortURL].mainURL;
 
-
-  res.redirect(mainURL);
+  if (mainURL) {
+    res.redirect(mainURL);
+  } else {
+    res.status(404).send('URL not found. This URL does not exist');
+  }
 });
 
 app.get('/register', (req, res) => {
@@ -115,7 +129,7 @@ app.post('/urls', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-  const user_id = 'user-' + generateRandomString();
+  const user_id = generateRandomString();
   const emailCheck = checkIfEmailExists(req.body.email, users);
 
   const user = {
@@ -130,6 +144,7 @@ app.post('/register', (req, res) => {
     users[user_id] = user;
   }
 
+  console.log(users);
   res.cookie('user_id', user_id)
   res.redirect('/urls')
 });
@@ -164,22 +179,44 @@ app.post('/logout', (req, res) => {
 //redirects users to edit page and allows them to change the shortURL to a new value
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = {
-    mainURL: req.body.mainURL
+
+  console.log(req.params.shortURL)
+  console.log(urlDatabase[req.params.shortURL])
+  console.log(urlDatabase[req.params.shortURL].userID)
+  //console.log(urlsForUser())
+
+
+  const ID = req.cookies['user_id'];
+  if (ID === urlDatabase[shortURL].userID) {
+    console.log('it worked!');
+    urlDatabase[shortURL].mainURL = req.body.newURL
+    console.log(urlDatabase)
+    res.redirect(`${shortURL}`)
+  } else {
+    res.status(400).send("Unauthorized user");
   }
-
-  res.redirect(`${shortURL}`)
-
 
 })
 
 
 //Deletes unwanted urls
 app.post('/urls/:shortURL/delete', (req, res) => {
-  delete urlDatabase[req.params.shortURL]
-  res.redirect('/urls')
-});
+  const ID = req.cookies['user_id'];
+  const shortURL = req.params.shortURL;
+  const userObj = urlsForUser(ID);
+  const userObjArr = Object.keys(userObj);
 
+  //console.log(urlDatabase)
+  // console.log(ID);
+
+  if (ID === urlDatabase[shortURL].userID) {
+    console.log('it worked??')
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('/urls')
+  } else {
+    res.status(400).send("Unauthorized user");
+  }
+});
 
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
