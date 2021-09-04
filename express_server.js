@@ -154,11 +154,6 @@ app.post('/register', (req, res) => {
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = getUserByEmail(email, users)
-  // console.log(user);
-  // console.log(req.body.password)
-  // console.log(users)
-  // console.log(urlDatabase)
-  // //checks if user is found within user database
 
   if (user && bcrypt.compareSync(password, user.password)) {
     req.session.user_id = user.id;
