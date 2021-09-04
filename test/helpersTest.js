@@ -28,6 +28,13 @@ describe('getUserByEmail', function () {
 
     assert.equal(user, expectedOutput);
   });
+  it('should return a undefind for non-existent/invalid user email', function () {
+    const user = getUserByEmail("user-fake@example.com", testUsers)
+    const expectedOutput = undefined;
+
+    assert.equal(user, expectedOutput);
+  });
+
 });
 
 describe('urlsForUser', function () {
