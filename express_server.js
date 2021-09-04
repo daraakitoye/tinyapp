@@ -3,7 +3,8 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const { checkIfEmailExists, authenticateUser } = require('./helpers')
+const bcrypt = require('bcrypt');
+const { checkIfEmailExists, authenticateUser, getUserByEmail } = require('./helpers')
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -132,12 +133,13 @@ app.post('/urls', (req, res) => {
 //generates random user_id for new user so they have access to Tinyapp
 app.post('/register', (req, res) => {
   const user_id = generateRandomString();
-  const emailCheck = checkIfEmailExists(req.body.email, users);
+  const emailCheck = getUserByEmail(req.body.email, users);
+  const hashedPassword = bcrypt.hashSync(req.body.password, 10);
 
   const user = {
     id: user_id,
     email: req.body.email,
-    password: req.body.password
+    password: hashedPassword
   }
   //Checks if email/account is already in database
   if (emailCheck) {
@@ -145,6 +147,7 @@ app.post('/register', (req, res) => {
   } else {
     users[user_id] = user;
   }
+  console.log(emailCheck)
 
   res.cookie('user_id', user_id)
   res.redirect('/urls')
@@ -153,17 +156,20 @@ app.post('/register', (req, res) => {
 //allows accsess for returning users
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  const user = authenticateUser(email, password, users)
+  //const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+  const user = getUserByEmail(email, users)
+  //console.log(user);
+  console.log(users)
   //checks if user is found within user database
-  if (user) {
+
+  if (bcrypt.compareSync(password, user.password) && user) {
     res.cookie('user_id', user.id);
     res.redirect('/urls')
-    return;
-  }
-  else {
+  } else {
     res.status(403).send('Invalid email and/or password. Please sumbit a valid email/password or create a new account.')
     return;
   }
+
 
 });
 
