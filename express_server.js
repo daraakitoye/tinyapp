@@ -5,7 +5,9 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { checkIfEmailExists, authenticateUser } = require('./helpers')
 
-
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.set('view engine', 'ejs');
 
 const generateRandomString = () => {
   let result = '';
@@ -47,16 +49,13 @@ const urlsForUser = (id, urlDatabase) => {
   }
   return urlsObj;
 };
-//------------------------------------------------------------------------>
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-app.set('view engine', 'ejs');
+//----------------------------------------------------------------------GETting Routes------------------------------------------------------------------------------->
 
 app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
+//for homepage
 app.get('/urls', (req, res) => {
   const urls = urlsForUser(req.cookies['user_id'], urlDatabase);
   const user = users[req.cookies['user_id']];
@@ -79,9 +78,9 @@ app.get("/urls/new", (req, res) => {
 
 });
 
+//shows page for shortURLs and edit form
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  // const mainURL = urlDatabase[shortURL]['mainURL'];
   const user = users[req.cookies['user_id']];
   const urls = urlsForUser(req.cookies['user_id'], urlDatabase);
 
@@ -89,7 +88,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//Redirect Short URLs
+//Redirects Short URLs to associted mainURLs(longURLs)
 app.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const mainURL = urlDatabase[shortURL].mainURL;
@@ -101,20 +100,22 @@ app.get('/u/:shortURL', (req, res) => {
   }
 });
 
+//for displaying registration form
 app.get('/register', (req, res) => {
   const user = users[req.cookies['user_id']];
   const templateVars = { user };
 
-
   res.render('register', templateVars);
 });
+
+//for displaying login form
 app.get('/login', (req, res) => {
   const user = users[req.cookies['user_id']];
   const templateVars = { user };
 
   res.render('urls_login', templateVars)
 });
-//-------------------------------------------------------------------------------------------------------------------------->
+//---------------------------------------------------------------------POSTing Requests---------------------------------------------------------------------------->
 
 //Auto updates urlDatabase with generated short URLs
 app.post('/urls', (req, res) => {
@@ -128,6 +129,7 @@ app.post('/urls', (req, res) => {
 
 });
 
+//generates random user_id for new user so they have access to Tinyapp
 app.post('/register', (req, res) => {
   const user_id = generateRandomString();
   const emailCheck = checkIfEmailExists(req.body.email, users);
@@ -137,27 +139,22 @@ app.post('/register', (req, res) => {
     email: req.body.email,
     password: req.body.password
   }
-
+  //Checks if email/account is already in database
   if (emailCheck) {
     res.status(400).send('Sorry, the account associated with this email already exists.');
   } else {
     users[user_id] = user;
   }
 
-  console.log(users);
   res.cookie('user_id', user_id)
   res.redirect('/urls')
 });
 
-
-
-
+//allows accsess for returning users
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = authenticateUser(email, password, users)
-
-
-
+  //checks if user is found within user database
   if (user) {
     res.cookie('user_id', user.id);
     res.redirect('/urls')
@@ -170,6 +167,7 @@ app.post('/login', (req, res) => {
 
 });
 
+//clears cookies from previous users
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
   res.redirect('/urls')
@@ -177,20 +175,15 @@ app.post('/logout', (req, res) => {
 
 
 //redirects users to edit page and allows them to change the shortURL to a new value
+//...as long as they are authorized
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
-
-  console.log(req.params.shortURL)
-  console.log(urlDatabase[req.params.shortURL])
-  console.log(urlDatabase[req.params.shortURL].userID)
-  //console.log(urlsForUser())
-
-
   const ID = req.cookies['user_id'];
+
   if (ID === urlDatabase[shortURL].userID) {
-    console.log('it worked!');
+    //console.log('it worked!');
     urlDatabase[shortURL].mainURL = req.body.newURL
-    console.log(urlDatabase)
+    // console.log(urlDatabase)
     res.redirect(`${shortURL}`)
   } else {
     res.status(400).send("Unauthorized user");
@@ -199,24 +192,20 @@ app.post('/urls/:shortURL', (req, res) => {
 })
 
 
-//Deletes unwanted urls
+//Deletes unwanted urls for authorized users
 app.post('/urls/:shortURL/delete', (req, res) => {
   const ID = req.cookies['user_id'];
   const shortURL = req.params.shortURL;
-  const userObj = urlsForUser(ID);
-  const userObjArr = Object.keys(userObj);
-
-  //console.log(urlDatabase)
-  // console.log(ID);
 
   if (ID === urlDatabase[shortURL].userID) {
-    console.log('it worked??')
+    //console.log('it worked??')
     delete urlDatabase[req.params.shortURL];
     res.redirect('/urls')
   } else {
     res.status(400).send("Unauthorized user");
   }
 });
+
 
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
