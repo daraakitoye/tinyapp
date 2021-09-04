@@ -10,48 +10,51 @@
 
 <body>
   <%- include('partials/_header') %>
-    <div class="card text-center">
-      <div class="card-header"></div>
-      <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= mainURL %>
-        </h5>
-        <p class="card-text">Short URL: <a href="/u/<%= shortURL %>">
-            <%= shortURL %>
-          </a></p>
-      </div>
-      <div class="card-footer text-muted">
-        <h3><b>Edit</b></h3>
-        <% if(user){%>
-          <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
-            <div class="form-group mb-2">
-              <label for="mainURL" style="margin-left: 33em;">New URL:</label>
-              <input class="form-control" type="text" name="mainURL" id="mainURL" placeholder="http://"
-                style="width: 300px; margin: 1em" required>
-              <button type="submit" class="btn btn-primary">Submit</button>
-            </div>
-          </form>
-          <% } else { %>
 
-            <div class="text-center">
-              Uh oh! Login to edit.
-            </div>
-
-      </div>
-
-      <% } %>
-    </div>
-
-    </div>
-    <!-- Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-      crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-      crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-      crossorigin="anonymous"></script>
+    <% if (user) { %>
+      <% if (urls[shortURL]) { %>
+        <div class="card text-center">
+          <div class="card-header"></div>
+          <div class="card-body">
+            <h5 class="card-title">TinyURL for: <%= urls[shortURL].mainURL %>
+            </h5>
+            <p class="card-text">Short URL: <a href="/u/<%= shortURL %>">
+                <%= shortURL %>
+              </a></p>
+          </div>
+          <div class="card-footer text-muted">
+            <h4><strong>Edit</strong></h4>
+            <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
+              <div class="form-group text-center">
+                <label for="newURL" style="margin-left: 33em;">New URL:</label>
+                <input class="form-control" type="text" name="newURL" id="newURL" placeholder="http://www."
+                  style="width: 300px; margin: 1em" required>
+                <button type="submit" class="btn btn-primary">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <% } else { %>
+          <div class="text-center">
+            <h4 class="text-muted mt-4"> Uh oh! This URL does not belong to you.</h4>
+          </div>
+          <% } %>
+            <% } else { %>
+              <div class="text-center">
+                <h4 class="text-muted mt-4"> <a href="/login">Login</a> or <a href="/register">Register</a> to access
+                  this URL</h4>
+              </div>
+              <% } %>
+                <!-- Bootstrap JS -->
+                <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+                  integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+                  crossorigin="anonymous"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+                  integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+                  crossorigin="anonymous"></script>
+                <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+                  integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+                  crossorigin="anonymous"></script>
 </body>
 
 </html>
